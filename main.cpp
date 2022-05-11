@@ -2,6 +2,8 @@
 #include <vector>
 #include <unordered_set>
 
+#include <iostream>
+
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
@@ -10,7 +12,6 @@
 
 #include "Node.h"
 #include "Link.h"
-#include "DataType.h"
 
 #include "ReadFileNode.h"
 
@@ -104,7 +105,7 @@ int main(int, char**) {
           Pin* inputPin = Pin::from(inputPinId);
           Pin* outputPin = Pin::from(outputPinId);
 
-          if (inputPin->kind() != outputPin->kind() && inputPin->type() == outputPin->type()) {
+          if (inputPin->kind() != outputPin->kind() && inputPin->type()->type_name() == outputPin->type()->type_name()) {
             if (NodeEditor::AcceptNewItem()) {
               links.insert(new Link(inputPinId, outputPinId));
             }
@@ -138,7 +139,8 @@ int main(int, char**) {
     NodeEditor::End();
 
     if (NodeEditor::PinId hoveredPinId = NodeEditor::GetHoveredPin()) {
-      ImGui::SetTooltip("Type: %s", Pin::from(hoveredPinId)->type().toString());
+      RuntimeType* value = Pin::from(hoveredPinId)->type();
+      ImGui::SetTooltip("Type: %s\nValue: %s", value->type_name(), value->to_string().c_str());
     }
 
     NodeEditor::SetCurrentEditor(nullptr);

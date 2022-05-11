@@ -1,16 +1,11 @@
 #include "ReadFileNode.h"
 
-#include <iostream>
-
 ReadFileNode::ReadFileNode() {
-  this->addInputPin("File path", DataType::String);
-
-  this->addOutputPin("Content", DataType::String);
+  addInputPin<RuntimeType::String>("File path");
+  addOutputPin<RuntimeType::String>("Content");
 }
 
 std::string ReadFileNode::node_name() {
-  return std::string("Read file");
+  return "Read file";
 }
 
-void ReadFileNode::update() {
-}

@@ -5,7 +5,7 @@
 #include <imgui_node_editor.h>
 
 #include "Node.h"
-#include "DataType.h"
+#include "RuntimeType.h"
 
 namespace NodeEditor = ax::NodeEditor;
 
@@ -14,7 +14,6 @@ class ReadFileNode : public Node {
     ReadFileNode();
 
     std::string node_name();
-    void update();
 };
 
 

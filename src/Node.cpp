@@ -34,13 +34,25 @@ void Node::render() {
 
     ImGui::Spacing();
 
+    ImGui::BeginGroup();
     for (auto& pin : _inputPins)
       pin.render();
+    ImGui::EndGroup();
 
     ImGui::SameLine(0, 50);
 
+    ImGui::PushItemWidth(-FLT_MIN);
+    ImGui::BeginGroup();
+    float maxSize = 0;
     for (auto& pin : _outputPins)
-      pin.render();
+      maxSize = std::max(maxSize, pin.calc_size().x);
+
+    for (auto& pin : _outputPins) {
+      int offset = maxSize - pin.calc_size().x;
+      pin.render(offset);
+    }
+    ImGui::EndGroup();
+    ImGui::PopItemWidth();
 
   NodeEditor::EndNode();
 
@@ -62,12 +74,4 @@ void Node::render() {
   NodeEditor::PopStyleColor(2);
   NodeEditor::PopStyleVar(2);
   ImGui::PopStyleColor();
-}
-
-void Node::addInputPin(std::string name, DataType type) {
-  _inputPins.emplace_back(name, type, NodeEditor::PinKind::Input);
-}
-
-void Node::addOutputPin(std::string name, DataType type) {
-  _outputPins.emplace_back(name, type, NodeEditor::PinKind::Output);
 }
