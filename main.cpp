@@ -64,12 +64,9 @@ int main(int, char**) {
   NodeEditor::EditorContext* m_Context = NodeEditor::CreateEditor(&config);
 
   std::unordered_set<Node*> nodes;
-  for (int i=0; i<10; i++) {
-    Node* node = new ReadFileNode();
-    nodes.insert(node);
-  }
-
   std::unordered_set<Link*> links;
+
+  NodeEditor::NodeId contextNodeId = 0;
 
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
@@ -125,16 +122,51 @@ int main(int, char**) {
       }
 
       NodeEditor::LinkId deletedLinkId;
-      while (NodeEditor::QueryDeletedLink(&deletedLinkId))
+      while (NodeEditor::QueryDeletedLink(&deletedLinkId)) {
         links.erase(Link::from(deletedLinkId));
+      }
     }
     NodeEditor::EndDelete();
 
-    for (Node* node : nodes)
-      node->render();
+    for (Node* node : nodes) node->render();
+    for (Link* link : links) link->render();
 
-    for (Link* link : links)
-      link->render();
+    auto openPopupPosition = ImGui::GetMousePos();
+
+    NodeEditor::Suspend();
+    if (NodeEditor::ShowBackgroundContextMenu()) ImGui::OpenPopup("BackgroundContext");
+    if (NodeEditor::ShowNodeContextMenu(&contextNodeId)) ImGui::OpenPopup("NodeContext");
+    NodeEditor::Resume();
+
+    NodeEditor::Suspend();
+    if (ImGui::BeginPopup("NodeContext")) {
+      if (auto* node = Node::from(contextNodeId)) {
+        if (ImGui::MenuItem("Delete")) {
+          nodes.erase(node);
+          delete node;
+        }
+      }
+
+      ImGui::EndPopup();
+    }
+
+    if (ImGui::BeginPopup("BackgroundContext")) {
+      auto newNodePosition = openPopupPosition;
+
+      ImGui::TextUnformatted("Create new node");
+      ImGui::Separator();
+
+      Node* node = nullptr;
+      if (ImGui::MenuItem("Read file")) node = new ReadFileNode();
+
+      if (node) {
+        nodes.insert(node);
+        NodeEditor::SetNodePosition(node->id(), newNodePosition);
+      }
+
+      ImGui::EndPopup();
+    }
+    NodeEditor::Resume();
 
     NodeEditor::End();
 
