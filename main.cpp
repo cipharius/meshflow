@@ -143,6 +143,13 @@ int main(int, char**) {
       ImGui::SetTooltip("Type: %s\nValue: %s", value->type_name(), value->to_string().c_str());
     }
 
+    if (NodeEditor::NodeId hoveredNodeId = NodeEditor::GetHoveredNode()) {
+      if (ImGui::IsKeyPressed(ImGuiKey_Space)) {
+        Node* value = Node::from(hoveredNodeId);
+        value->update();
+      }
+    }
+
     NodeEditor::SetCurrentEditor(nullptr);
 
     ImGui::End();

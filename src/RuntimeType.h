@@ -28,6 +28,7 @@ class RuntimeType {
 template<typename T, const char* N>
 class RuntimeType::Type final : public RuntimeType {
   public:
+    using type = T;
     std::shared_ptr<T> value;
 
     Type() = default;
@@ -37,11 +38,9 @@ class RuntimeType::Type final : public RuntimeType {
     std::string to_string();
 
     constexpr static RuntimeType::Type<T, N>* cast(RuntimeType* abstract) {
-      if (abstract->type_name() == N) {
-        return static_cast<RuntimeType::Type<T, N>*>(abstract);
-      } else {
-        return nullptr;
-      }
+      if (abstract->type_name() != N) return nullptr;
+
+      return static_cast<RuntimeType::Type<T, N>*>(abstract);
     }
 
     constexpr const char* type_name() {

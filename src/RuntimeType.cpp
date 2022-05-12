@@ -12,13 +12,11 @@ bool RuntimeType::Type<T, N>::has_value() {
 
 template <typename T, const char* N>
 std::string RuntimeType::Type<T, N>::to_string() {
-  if (value) {
-    std::stringstream ss;
-    ss << *value;
-    return ss.str();
-  } else {
-    return "";
-  }
+  if (!value) return "";
+
+  std::stringstream ss;
+  ss << *value;
+  return ss.str();
 }
 
 

@@ -14,6 +14,7 @@ class ReadFileNode : public Node {
     ReadFileNode();
 
     std::string node_name();
+    void update();
 };
 
 
