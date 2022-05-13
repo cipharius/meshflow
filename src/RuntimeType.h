@@ -28,6 +28,8 @@ class RuntimeType {
 template<typename T, const char* N>
 class RuntimeType::Type final : public RuntimeType {
   public:
+    constexpr static const char* static_type_name() { return N; }
+
     using type = T;
     std::shared_ptr<T> value;
 
@@ -43,9 +45,7 @@ class RuntimeType::Type final : public RuntimeType {
       return static_cast<RuntimeType::Type<T, N>*>(abstract);
     }
 
-    constexpr const char* type_name() {
-      return N;
-    }
+    constexpr const char* type_name() { return N; }
 };
 
 #endif

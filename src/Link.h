@@ -7,10 +7,11 @@ namespace NodeEditor = ax::NodeEditor;
 
 class Link {
   public:
+    static Link* from(NodeEditor::LinkId& linkId);
+
     Link(NodeEditor::PinId inputPinId, NodeEditor::PinId outputPinId);
     Link(const Link&) = delete;
 
-    static Link* from(NodeEditor::LinkId& linkId);
 
     NodeEditor::LinkId id();
     NodeEditor::PinId inputPinId();

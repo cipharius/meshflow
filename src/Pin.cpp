@@ -1,32 +1,40 @@
 #include "Pin.h"
 
-Pin::Pin(std::string name, RuntimeType* type, NodeEditor::PinKind kind)
-: _name(name), _type(type), _kind(kind) {
-  _id = NodeEditor::PinId(this);
+GenericPin::GenericPin(NodeEditor::NodeId parentId, std::string name, RuntimeType* type, NodeEditor::PinKind kind)
+: _parentId(parentId), _name(name), _type(type), _kind(kind) {
 }
 
-Pin::Pin(Pin&& other)
-: _name(other._name), _type(other._type), _kind(other._kind) {
-  _id = NodeEditor::PinId(this);
-}
+GenericPin::~GenericPin() {}
 
-Pin* Pin::from(NodeEditor::PinId pinId) {
-  return reinterpret_cast<Pin*>(pinId.AsPointer());
-}
-
-NodeEditor::PinId Pin::id() {
+NodeEditor::PinId GenericPin::id() {
   return _id;
 }
 
-NodeEditor::PinKind Pin::kind() {
+NodeEditor::NodeId GenericPin::parent_id() {
+  return _parentId;
+}
+
+NodeEditor::PinKind GenericPin::kind() {
   return _kind;
 }
 
-RuntimeType* Pin::type() {
+std::string GenericPin::name() {
+  return _name;
+}
+
+RuntimeType* GenericPin::type() {
   return _type;
 }
 
-ImVec2 Pin::calc_size() {
+std::shared_ptr<Link> GenericPin::link() {
+  return _link;
+}
+
+GenericPin* GenericPin::from(NodeEditor::PinId pinId) {
+  return reinterpret_cast<GenericPin*>(pinId.AsPointer());
+}
+
+ImVec2 GenericPin::calc_size() {
   std::stringstream ss;
   switch (_kind) {
     case NodeEditor::PinKind::Input: {
@@ -43,7 +51,7 @@ ImVec2 Pin::calc_size() {
   }
 }
 
-void Pin::render(int offset) {
+void GenericPin::render(int offset) {
   NodeEditor::BeginPin(_id, _kind);
 
   switch (_kind) {

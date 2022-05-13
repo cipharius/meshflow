@@ -2,8 +2,6 @@
 #include <vector>
 #include <unordered_set>
 
-#include <iostream>
-
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
@@ -64,9 +62,9 @@ int main(int, char**) {
   NodeEditor::EditorContext* m_Context = NodeEditor::CreateEditor(&config);
 
   std::unordered_set<Node*> nodes;
-  std::unordered_set<Link*> links;
 
   NodeEditor::NodeId contextNodeId = 0;
+  ImVec2 openPopupPos;
 
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
@@ -99,12 +97,12 @@ int main(int, char**) {
 
       if (NodeEditor::QueryNewLink(&inputPinId, &outputPinId)) {
         if (inputPinId && outputPinId) {
-          Pin* inputPin = Pin::from(inputPinId);
-          Pin* outputPin = Pin::from(outputPinId);
+          GenericPin* inputPin = GenericPin::from(inputPinId);
+          GenericPin* outputPin = GenericPin::from(outputPinId);
 
-          if (inputPin->kind() != outputPin->kind() && inputPin->type()->type_name() == outputPin->type()->type_name()) {
+          if (inputPin->kind() != outputPin->kind() && inputPin->type_name() == outputPin->type_name()) {
             if (NodeEditor::AcceptNewItem()) {
-              links.insert(new Link(inputPinId, outputPinId));
+              outputPin->bind(inputPin);
             }
           } else {
             NodeEditor::RejectNewItem();
@@ -118,28 +116,57 @@ int main(int, char**) {
     if (NodeEditor::BeginDelete()) {
       NodeEditor::NodeId deletedNodeId;
       while (NodeEditor::QueryDeletedNode(&deletedNodeId)) {
-        nodes.erase(Node::from(deletedNodeId));
+        if (Node* node = Node::from(deletedNodeId)) {
+          nodes.erase(node);
+          delete node;
+        }
       }
 
       NodeEditor::LinkId deletedLinkId;
       while (NodeEditor::QueryDeletedLink(&deletedLinkId)) {
-        links.erase(Link::from(deletedLinkId));
+        if (auto* link = Link::from(deletedLinkId)) {
+          if (auto* pin = GenericPin::from(link->outputPinId())) {
+            pin->unbind();
+          }
+        }
       }
     }
     NodeEditor::EndDelete();
 
-    for (Node* node : nodes) node->render();
-    for (Link* link : links) link->render();
+    for (Node* node : nodes) {
+      if (node->is_first_render()) {
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0);
+        node->render();
+        ImGui::PopStyleVar();
 
-    auto openPopupPosition = ImGui::GetMousePos();
+        ImVec2 nodeSize = NodeEditor::GetNodeSize(node->id());
+        ImVec2 nodePos = NodeEditor::GetNodePosition(node->id());
+        ImVec2 nodeNewPos = ImVec2(nodePos.x - nodeSize.x/2, nodePos.y - nodeSize.y/2);
+        NodeEditor::SetNodePosition(node->id(), nodeNewPos);
+      }
+
+      node->render();
+    }
+
+    for (Node* node : nodes) {
+      for (auto& link : node->outbound_links()) {
+        link->render();
+      }
+    }
 
     NodeEditor::Suspend();
-    if (NodeEditor::ShowBackgroundContextMenu()) ImGui::OpenPopup("BackgroundContext");
-    if (NodeEditor::ShowNodeContextMenu(&contextNodeId)) ImGui::OpenPopup("NodeContext");
+    if (NodeEditor::ShowNodeContextMenu(&contextNodeId)) {
+      openPopupPos = ImGui::GetMousePos();
+      ImGui::OpenPopup("NodeContext");
+    }
+    if (NodeEditor::ShowBackgroundContextMenu()) {
+      openPopupPos = ImGui::GetMousePos();
+      ImGui::OpenPopup("BackgroundContext");
+    }
     NodeEditor::Resume();
 
     NodeEditor::Suspend();
-    if (ImGui::BeginPopup("NodeContext")) {
+    if (ImGui::BeginPopup("NodeContext", ImGuiWindowFlags_NoMove)) {
       if (auto* node = Node::from(contextNodeId)) {
         if (ImGui::MenuItem("Delete")) {
           nodes.erase(node);
@@ -150,9 +177,7 @@ int main(int, char**) {
       ImGui::EndPopup();
     }
 
-    if (ImGui::BeginPopup("BackgroundContext")) {
-      auto newNodePosition = openPopupPosition;
-
+    if (ImGui::BeginPopup("BackgroundContext", ImGuiWindowFlags_NoMove)) {
       ImGui::TextUnformatted("Create new node");
       ImGui::Separator();
 
@@ -160,8 +185,9 @@ int main(int, char**) {
       if (ImGui::MenuItem("Read file")) node = new ReadFileNode();
 
       if (node) {
+        ImVec2 newNodePos = NodeEditor::ScreenToCanvas(openPopupPos);
         nodes.insert(node);
-        NodeEditor::SetNodePosition(node->id(), newNodePosition);
+        NodeEditor::SetNodePosition(node->id(), newNodePos);
       }
 
       ImGui::EndPopup();
@@ -171,8 +197,9 @@ int main(int, char**) {
     NodeEditor::End();
 
     if (NodeEditor::PinId hoveredPinId = NodeEditor::GetHoveredPin()) {
-      RuntimeType* value = Pin::from(hoveredPinId)->type();
-      ImGui::SetTooltip("Type: %s\nValue: %s", value->type_name(), value->to_string().c_str());
+      if (auto* pin = GenericPin::from(hoveredPinId)) {
+        ImGui::SetTooltip("PinID: %p\nType: %s", pin->id().AsPointer(), pin->type_name());
+      }
     }
 
     if (NodeEditor::NodeId hoveredNodeId = NodeEditor::GetHoveredNode()) {
@@ -200,9 +227,6 @@ int main(int, char**) {
 
   for (Node* node : nodes)
     delete node;
-
-  for (Link* link : links)
-    delete link;
 
   NodeEditor::DestroyEditor(m_Context);
 

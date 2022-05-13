@@ -8,12 +8,46 @@
 template<class T>
 class Channel {
   public:
-    Channel();
-    bool has_changed();
-    void reset();
-    void push(T value);
-    std::shared_ptr<T> pull();
-    std::shared_ptr<T> pull_blocking();
+    Channel() : state_changed(false) {}
+
+    constexpr bool has_changed() {
+      return state_changed;
+    }
+
+    void reset() {
+      std::unique_lock<std::mutex> lock(state_mutex);
+      state.reset();
+      state_changed = true;
+      on_update.notify_all();
+    }
+
+    void push(T value) {
+      {
+        std::unique_lock<std::mutex> lock(state_mutex);
+
+        if (auto cur_value = state)
+          if (*cur_value == value)
+            return;
+
+        state = std::make_shared<T>(std::move(value));
+      };
+
+      state_changed = true;
+      on_update.notify_all();
+    }
+
+    std::shared_ptr<T> pull() {
+      std::unique_lock<std::mutex> lock(state_mutex);
+      state_changed = false;
+      return state;
+    }
+
+    std::shared_ptr<T> pull_blocking() {
+      std::unique_lock<std::mutex> lock(state_mutex);
+      on_update.wait(lock);
+      state_changed = false;
+      return state;
+    }
 
   private:
     std::shared_ptr<T> state;

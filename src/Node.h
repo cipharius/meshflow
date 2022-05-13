@@ -22,32 +22,41 @@ class Node {
 
     virtual std::string node_name() = 0;
     virtual void update() = 0;
+
+    constexpr bool is_first_render() { return _firstRender; }
+
     NodeEditor::NodeId id();
+    std::vector<std::shared_ptr<Link>> inbound_links();
+    std::vector<std::shared_ptr<Link>> outbound_links();
     void render();
 
   protected:
     template <class RT>
     constexpr void addInputPin(std::string name) {
       static_assert(std::is_base_of<RuntimeType, RT>::value, "RT not derived from RuntimeType");
-      _inputPins.emplace_back(name, new RT(), NodeEditor::PinKind::Input);
+      auto* pin = new Pin<RT>(_id, name, new RT(), NodeEditor::PinKind::Input);
+      _inputPins.emplace_back(pin);
     }
 
     template <class RT, class T>
     constexpr void addInputPin(std::string name, T value) {
       static_assert(std::is_base_of<RuntimeType, RT>::value, "RT not derived from RuntimeType");
-      _inputPins.emplace_back(name, new RT(value), NodeEditor::PinKind::Input);
+      auto* pin = new Pin<RT>(_id, name, new RT(value), NodeEditor::PinKind::Input);
+      _inputPins.emplace_back(pin);
     }
 
     template <class RT>
     constexpr void addOutputPin(std::string name){
       static_assert(std::is_base_of<RuntimeType, RT>::value, "RT not derived from RuntimeType");
-      _outputPins.emplace_back(name, new RT(), NodeEditor::PinKind::Output);
+      auto* pin = new Pin<RT>(_id, name, new RT(), NodeEditor::PinKind::Output);
+      _outputPins.emplace_back(pin);
     }
 
     template <class RT, class T>
     constexpr void addOutputPin(std::string name, T value){
       static_assert(std::is_base_of<RuntimeType, RT>::value, "RT not derived from RuntimeType");
-      _outputPins.emplace_back(name, new RT(value), NodeEditor::PinKind::Output);
+      auto* pin = new Pin<RT>(_id, name, new RT(value), NodeEditor::PinKind::Output);
+      _outputPins.emplace_back(pin);
     }
 
     template <class RT, class T>
@@ -55,8 +64,10 @@ class Node {
       static_assert(std::is_base_of<RuntimeType, RT>::value, "RT not derived from RuntimeType");
       if (i >= _inputPins.size()) return std::shared_ptr<T>();
 
-      if (auto* handle = RT::cast(_inputPins[i].type())) {
-        return handle->value;
+      if (auto& pin = _inputPins[i]) {
+        if (auto* runtimeType = RT::cast(pin->type())) {
+          return runtimeType->value;
+        }
       }
 
       return std::shared_ptr<T>();
@@ -68,15 +79,18 @@ class Node {
       static_assert(std::is_same<T, typename RT::type>::value, "Value doesn't match the RT type");
       if (i >= _outputPins.size()) return;
 
-      if (auto* handle = RT::cast(_outputPins[i].type())) {
-        handle->value = std::make_shared<T>(value);
+      if (auto& pin = _outputPins[i]) {
+        if (auto* runtimeType = RT::cast(pin->type())) {
+          runtimeType->value = std::make_shared<T>(value);
+        }
       }
     }
 
-    std::vector<Pin> _inputPins;
-    std::vector<Pin> _outputPins;
+    std::vector<std::unique_ptr<GenericPin>> _inputPins;
+    std::vector<std::unique_ptr<GenericPin>> _outputPins;
 
   private:
+    bool _firstRender;
     NodeEditor::NodeId _id;
 };
 
