@@ -60,6 +60,10 @@ class Pin : public GenericPin {
       _id = NodeEditor::PinId(this);
     }
 
+    ~Pin() {
+      this->unbind();
+    }
+
     constexpr RT* type() { return static_cast<RT*>( GenericPin::type() ); }
     constexpr const char* type_name() { return GenericPin::type()->type_name(); }
 

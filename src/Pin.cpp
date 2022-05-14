@@ -4,7 +4,9 @@ GenericPin::GenericPin(NodeEditor::NodeId parentId, std::string name, RuntimeTyp
 : _parentId(parentId), _name(name), _kind(kind), _type(type) {
 }
 
-GenericPin::~GenericPin() {}
+GenericPin::~GenericPin() {
+  delete _type;
+}
 
 NodeEditor::PinId GenericPin::id() {
   return _id;
