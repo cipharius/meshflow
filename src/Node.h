@@ -21,6 +21,7 @@ class Node {
     static Node* from(NodeEditor::NodeId& nodeId);
 
     virtual void update() = 0;
+    virtual void render_widget();
 
     constexpr bool is_first_render() { return _firstRender; }
     constexpr const char* node_name() { return _name; }

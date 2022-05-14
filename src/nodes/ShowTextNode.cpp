@@ -10,8 +10,16 @@ void ShowTextNode::update() {
   auto text = readPin<RuntimeType::String, std::string>(0);
 
   if (text) {
-    std::cout << "Show text: " << *text << std::endl;
+    _textBoxState = text;
   } else {
-    std::cout << "Show text - No text" << std::endl;
+    _textBoxState.reset();
+  }
+}
+
+void ShowTextNode::render_widget() {
+  if (_textBoxState) {
+    ImGui::TextUnformatted(_textBoxState->c_str());
+  } else {
+    ImGui::TextColored(ImVec4(1, 0, 0, 1), "No input");
   }
 }

@@ -12,6 +12,8 @@ Node* Node::from(NodeEditor::NodeId& nodeId) {
   return reinterpret_cast<Node*>(nodeId.AsPointer());
 }
 
+void Node::render_widget() {}
+
 NodeEditor::NodeId Node::id() {
   return _id;
 }
@@ -75,7 +77,6 @@ void Node::render() {
 
     ImGui::SameLine(0, 50);
 
-    ImGui::PushItemWidth(-FLT_MIN);
     ImGui::BeginGroup();
     float maxSize = 0;
     for (auto& pin : _outputPins)
@@ -86,7 +87,8 @@ void Node::render() {
       pin->render(offset);
     }
     ImGui::EndGroup();
-    ImGui::PopItemWidth();
+
+    this->render_widget();
 
   NodeEditor::EndNode();
 
