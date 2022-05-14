@@ -4,10 +4,8 @@ REGISTER_NODE(ReadFileNode, "Read file");
 
 ReadFileNode::ReadFileNode() {
   addInputPin<RuntimeType::String>("File path", "Test");
-  addInputPin<RuntimeType::Int>("Crap");
 
   addOutputPin<RuntimeType::String>("Content", "Boop");
-  addOutputPin<RuntimeType::Float>("Stuff");
 }
 
 void ReadFileNode::update() {

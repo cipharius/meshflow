@@ -9,8 +9,8 @@ ShowTextNode::ShowTextNode() {
 void ShowTextNode::update() {
   auto text = readPin<RuntimeType::String, std::string>(0);
 
-  if (auto value = text) {
-    std::cout << "Show text: " << text << std::endl;
+  if (text) {
+    std::cout << "Show text: " << *text << std::endl;
   } else {
     std::cout << "Show text - No text" << std::endl;
   }

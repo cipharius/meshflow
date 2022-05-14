@@ -21,15 +21,12 @@ class Channel {
       on_update.notify_all();
     }
 
-    void push(T value) {
+    void push(std::shared_ptr<T> value) {
       {
         std::unique_lock<std::mutex> lock(state_mutex);
-
-        if (auto cur_value = state)
-          if (*cur_value == value)
-            return;
-
-        state = std::make_shared<T>(std::move(value));
+        if (state == value) return;
+        if (state && value && *state == *value) return;
+        state = value;
       };
 
       state_changed = true;

@@ -39,10 +39,12 @@ class GenericPin {
 
     NodeEditor::NodeId _parentId;
     std::string _name;
-    RuntimeType* _type;
     NodeEditor::PinKind _kind;
     NodeEditor::PinId _id;
     std::shared_ptr<Link> _link;
+
+  private:
+    RuntimeType* _type;
 };
 
 template <class RT>
@@ -58,8 +60,8 @@ class Pin : public GenericPin {
       _id = NodeEditor::PinId(this);
     }
 
-    constexpr RT* type() { return static_cast<RT*>(_type); }
-    constexpr const char* type_name() { return _type->type_name(); }
+    constexpr RT* type() { return static_cast<RT*>( GenericPin::type() ); }
+    constexpr const char* type_name() { return GenericPin::type()->type_name(); }
 
     void bind(GenericPin* otherGeneric) override {
       if (this->parent_id() == otherGeneric->parent_id()) return;
@@ -86,6 +88,12 @@ class Pin : public GenericPin {
       _link = std::shared_ptr<Link>(new Link(inputPinId, outputPinId));
       other->_channel = _channel;
       other->_link = _link;
+
+      if (this->kind() == NodeEditor::PinKind::Output) {
+        _channel->push(this->type()->value);
+      } else {
+        _channel->push(other->type()->value);
+      }
     }
 
     void unbind() override {
@@ -105,6 +113,17 @@ class Pin : public GenericPin {
 
       _channel.reset();
       _link.reset();
+    }
+
+    void write(std::shared_ptr<typename RT::type> value) {
+      this->type()->value = value;
+      if (!_channel) return;
+      _channel->push(value);
+    }
+
+    std::shared_ptr<typename RT::type> read() {
+      if (!_channel) return this->type()->value;
+      return _channel->pull();
     }
 
     Pin(const Pin<RT>&) = delete;

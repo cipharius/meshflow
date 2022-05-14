@@ -65,9 +65,9 @@ class Node {
       static_assert(std::is_base_of<RuntimeType, RT>::value, "RT not derived from RuntimeType");
       if (i >= _inputPins.size()) return std::shared_ptr<T>();
 
-      if (auto& pin = _inputPins[i]) {
-        if (auto* runtimeType = RT::cast(pin->type())) {
-          return runtimeType->value;
+      if (auto& genericPin = _inputPins[i]) {
+        if (auto* pin = Pin<RT>::cast( &(*genericPin) )) {
+          return pin->read();
         }
       }
 
@@ -80,9 +80,9 @@ class Node {
       static_assert(std::is_same<T, typename RT::type>::value, "Value doesn't match the RT type");
       if (i >= _outputPins.size()) return;
 
-      if (auto& pin = _outputPins[i]) {
-        if (auto* runtimeType = RT::cast(pin->type())) {
-          runtimeType->value = std::make_shared<T>(value);
+      if (auto& genericPin = _outputPins[i]) {
+        if (auto* pin = Pin<RT>::cast( &(*genericPin) )) {
+          pin->write(std::make_shared<T>(value));
         }
       }
     }

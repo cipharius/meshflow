@@ -1,7 +1,7 @@
 #include "Pin.h"
 
 GenericPin::GenericPin(NodeEditor::NodeId parentId, std::string name, RuntimeType* type, NodeEditor::PinKind kind)
-: _parentId(parentId), _name(name), _type(type), _kind(kind) {
+: _parentId(parentId), _name(name), _kind(kind), _type(type) {
 }
 
 GenericPin::~GenericPin() {}
