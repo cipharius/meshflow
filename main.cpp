@@ -182,7 +182,11 @@ int main(int, char**) {
       ImGui::Separator();
 
       Node* node = nullptr;
-      if (ImGui::MenuItem("Read file")) node = new ReadFileNode();
+      for (const char* node_type : NodeRegistry::node_types()) {
+        if (ImGui::MenuItem(node_type)) {
+          node = NodeRegistry::create_node(node_type);
+        }
+      }
 
       if (node) {
         ImVec2 newNodePos = NodeEditor::ScreenToCanvas(openPopupPos);

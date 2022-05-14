@@ -20,12 +20,13 @@ class Node {
 
     static Node* from(NodeEditor::NodeId& nodeId);
 
-    virtual std::string node_name() = 0;
     virtual void update() = 0;
 
     constexpr bool is_first_render() { return _firstRender; }
+    constexpr const char* node_name() { return _name; }
 
     NodeEditor::NodeId id();
+    void assign_name(const char* name);
     std::vector<std::shared_ptr<Link>> inbound_links();
     std::vector<std::shared_ptr<Link>> outbound_links();
     void render();
@@ -90,6 +91,7 @@ class Node {
     std::vector<std::unique_ptr<GenericPin>> _outputPins;
 
   private:
+    const char* _name;
     bool _firstRender;
     NodeEditor::NodeId _id;
 };

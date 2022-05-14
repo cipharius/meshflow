@@ -1,6 +1,6 @@
 #include "Node.h"
 
-Node::Node() : _firstRender(true) {
+Node::Node() : _name(nullptr), _firstRender(true) {
   _id = NodeEditor::NodeId(this);
   (void)_inputPins;
   (void)_outputPins;
@@ -14,6 +14,11 @@ Node* Node::from(NodeEditor::NodeId& nodeId) {
 
 NodeEditor::NodeId Node::id() {
   return _id;
+}
+
+void Node::assign_name(const char* name) {
+  if (_name != nullptr) return;
+  _name = name;
 }
 
 std::vector<std::shared_ptr<Link>> Node::inbound_links() {
@@ -56,7 +61,7 @@ void Node::render() {
 
   NodeEditor::BeginNode(_id);
     ImGui::PushFont(io.Fonts->Fonts[1]);
-    ImGui::Text("%s", this->node_name().c_str());
+    ImGui::Text("%s", this->node_name());
     ImGui::PopFont();
     ImGui::Spacing();
     ImVec2 headerEnd = ImGui::GetCursorScreenPos();

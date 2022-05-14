@@ -1,6 +1,6 @@
 #include "ReadFileNode.h"
 
-#include <iostream>
+RegisterNode<ReadFileNode> _("Read file");
 
 ReadFileNode::ReadFileNode() {
   addInputPin<RuntimeType::String>("File path", "Test");
@@ -8,10 +8,6 @@ ReadFileNode::ReadFileNode() {
 
   addOutputPin<RuntimeType::String>("Content", "Boop");
   addOutputPin<RuntimeType::Float>("Stuff");
-}
-
-std::string ReadFileNode::node_name() {
-  return "Read file";
 }
 
 void ReadFileNode::update() {
