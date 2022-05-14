@@ -21,6 +21,7 @@ class TextNode : public Node {
 
     char _text[1024 * 16];
     bool _updated;
+    char _label[32];
 };
 
 #endif

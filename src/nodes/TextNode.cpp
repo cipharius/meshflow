@@ -4,6 +4,7 @@ REGISTER_NODE(TextNode, "Text");
 
 TextNode::TextNode() : _text(""), _updated(true) {
   addOutputPin<RuntimeType::String>("Text");
+  snprintf(_label, IM_ARRAYSIZE(_label), "##TextNode(%p)", this);
 }
 
 void TextNode::update() {
@@ -12,11 +13,7 @@ void TextNode::update() {
 
 void TextNode::render_widget() {
   ImGui::PushItemWidth(200);
-  ImGui::InputText(
-    "##source",
-    _text,
-    IM_ARRAYSIZE(_text)
-  );
+  ImGui::InputText(_label, _text, IM_ARRAYSIZE(_text));
   ImGui::PopItemWidth();
 }
 
