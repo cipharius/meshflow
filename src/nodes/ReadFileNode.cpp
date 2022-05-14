@@ -9,7 +9,7 @@ ReadFileNode::ReadFileNode() {
 }
 
 void ReadFileNode::update() {
-  auto filePath = readPin<RuntimeType::String, std::string>(0);
+  auto filePath = readPin<RuntimeType::String>(0);
 
   if (auto value = filePath) {
     std::cout << "File path: " << *value << std::endl;

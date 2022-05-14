@@ -92,6 +92,8 @@ int main(int, char**) {
     NodeEditor::SetCurrentEditor(m_Context);
     NodeEditor::Begin("Mesh composer", ImVec2(0.0f, 0.0f));
 
+    NodeEditor::EnableShortcuts(!io.WantTextInput);
+
     if (NodeEditor::BeginCreate()) {
       NodeEditor::PinId inputPinId, outputPinId;
 

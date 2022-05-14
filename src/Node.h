@@ -61,10 +61,10 @@ class Node {
       _outputPins.emplace_back(pin);
     }
 
-    template <class RT, class T>
-    constexpr std::shared_ptr<T> readPin(long unsigned int i) {
+    template <class RT>
+    constexpr std::shared_ptr<typename RT::type> readPin(long unsigned int i) {
       static_assert(std::is_base_of<RuntimeType, RT>::value, "RT not derived from RuntimeType");
-      if (i >= _inputPins.size()) return std::shared_ptr<T>();
+      if (i >= _inputPins.size()) return std::shared_ptr<typename RT::type>();
 
       if (auto& genericPin = _inputPins[i]) {
         if (auto* pin = Pin<RT>::cast( &(*genericPin) )) {
@@ -72,18 +72,17 @@ class Node {
         }
       }
 
-      return std::shared_ptr<T>();
+      return std::shared_ptr<typename RT::type>();
     }
 
-    template <class RT, class T>
-    constexpr void writePin(long unsigned int i, T value) {
+    template <class RT>
+    constexpr void writePin(long unsigned int i, typename RT::type value) {
       static_assert(std::is_base_of<RuntimeType, RT>::value, "RT not derived from RuntimeType");
-      static_assert(std::is_same<T, typename RT::type>::value, "Value doesn't match the RT type");
       if (i >= _outputPins.size()) return;
 
       if (auto& genericPin = _outputPins[i]) {
         if (auto* pin = Pin<RT>::cast( &(*genericPin) )) {
-          pin->write(std::make_shared<T>(value));
+          pin->write(std::make_shared<typename RT::type>(value));
         }
       }
     }

@@ -1,8 +1,6 @@
 #ifndef SHOWTEXTNODE_H
 #define SHOWTEXTNODE_H
 
-#include <iostream>
-
 #include "imgui.h"
 
 #include "RuntimeType.h"

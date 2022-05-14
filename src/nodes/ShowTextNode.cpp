@@ -7,7 +7,7 @@ ShowTextNode::ShowTextNode() {
 }
 
 void ShowTextNode::update() {
-  auto text = readPin<RuntimeType::String, std::string>(0);
+  auto text = readPin<RuntimeType::String>(0);
 
   if (text) {
     _textBoxState = text;
