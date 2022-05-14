@@ -1,6 +1,6 @@
 #include "Node.h"
 
-Node::Node() : _name(nullptr), _firstRender(true) {
+Node::Node() : _name(nullptr), _firstRender(true), _renderWidget(true) {
   _id = NodeEditor::NodeId(this);
   (void)_inputPins;
   (void)_outputPins;
@@ -12,7 +12,9 @@ Node* Node::from(NodeEditor::NodeId& nodeId) {
   return reinterpret_cast<Node*>(nodeId.AsPointer());
 }
 
-void Node::render_widget() {}
+void Node::render_widget() {
+  _renderWidget = false;
+}
 
 NodeEditor::NodeId Node::id() {
   return _id;
@@ -88,6 +90,14 @@ void Node::render() {
     }
     ImGui::EndGroup();
 
+    ImVec2 pinsEnd;
+    if (_renderWidget) {
+      ImGui::Spacing();
+       pinsEnd = ImGui::GetCursorScreenPos();
+      ImGui::Spacing();
+    }
+
+    _renderWidget = true;
     this->render_widget();
 
   NodeEditor::EndNode();
@@ -105,6 +115,14 @@ void Node::render() {
       ImVec2((float)maxPos.x - borderWidth, (float)headerEnd.y),
       headerColor
     );
+
+    if (_renderWidget) {
+      drawList->AddLine(
+        ImVec2((float)minPos.x + (borderWidth - 0.4), pinsEnd.y),
+        ImVec2((float)maxPos.x - (borderWidth + 0.5), pinsEnd.y),
+        headerColor
+      );
+    }
   }
 
   NodeEditor::PopStyleColor(2);

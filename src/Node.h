@@ -94,6 +94,7 @@ class Node {
   private:
     const char* _name;
     bool _firstRender;
+    bool _renderWidget;
     NodeEditor::NodeId _id;
 };
 
