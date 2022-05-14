@@ -8,8 +8,6 @@
 #include "NodeRegistry.h"
 #include "RuntimeType.h"
 
-namespace NodeEditor = ax::NodeEditor;
-
 class ReadFileNode : public Node {
   public:
     ReadFileNode();

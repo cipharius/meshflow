@@ -6,6 +6,9 @@
 
 #include "Node.h"
 
+#define REGISTER_NODE(NODE, NAME) \
+RegisterNode<NODE> Register##NODE(NAME);
+
 class NodeRegistry {
   public:
     static const std::set<const char*> node_types() {

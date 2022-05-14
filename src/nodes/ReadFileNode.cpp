@@ -1,6 +1,6 @@
 #include "ReadFileNode.h"
 
-RegisterNode<ReadFileNode> _("Read file");
+REGISTER_NODE(ReadFileNode, "Read file");
 
 ReadFileNode::ReadFileNode() {
   addInputPin<RuntimeType::String>("File path", "Test");
