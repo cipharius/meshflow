@@ -33,15 +33,17 @@ class Channel {
       on_update.notify_all();
     }
 
-    std::shared_ptr<T> pull() {
+    std::shared_ptr<T> pull_nonblocking() {
       std::unique_lock<std::mutex> lock(state_mutex);
       state_changed = false;
       return state;
     }
 
-    std::shared_ptr<T> pull_blocking() {
+    std::shared_ptr<T> pull() {
       std::unique_lock<std::mutex> lock(state_mutex);
-      on_update.wait(lock);
+      if (!state_changed) {
+        on_update.wait(lock);
+      }
       state_changed = false;
       return state;
     }

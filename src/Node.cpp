@@ -8,6 +8,13 @@ Node::Node() : _name(nullptr), _firstRender(true), _renderWidget(true) {
 
 Node::~Node() {}
 
+void Node::update_loop(Node *node, std::atomic_flag *stop_signal) {
+  while (stop_signal->test_and_set()) {
+    node->update();
+    std::this_thread::yield();
+  }
+}
+
 Node* Node::from(NodeEditor::NodeId& nodeId) {
   return reinterpret_cast<Node*>(nodeId.AsPointer());
 }
@@ -130,4 +137,14 @@ void Node::render() {
   ImGui::PopStyleColor();
 
   _firstRender = false;
+}
+
+void Node::start_update_loop() {
+  _stopSignal.test_and_set();
+  _thread = std::thread(Node::update_loop, this, &_stopSignal);
+}
+
+void Node::stop_update_loop() {
+  _stopSignal.clear();
+  _thread.join();
 }

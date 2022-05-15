@@ -2,6 +2,7 @@
 #define READFILENODE_H
 
 #include <string>
+#include <iostream>
 #include <imgui_node_editor.h>
 
 #include "Node.h"
@@ -11,7 +12,7 @@
 class ReadFileNode : public Node {
   public:
     ReadFileNode();
-    void update();
+    void update() override;
 };
 
 

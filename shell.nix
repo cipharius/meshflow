@@ -13,5 +13,6 @@ pkgs.mkShell {
     xorg.libXdmcp.dev
 
     gdb
+    tig
   ];
 }

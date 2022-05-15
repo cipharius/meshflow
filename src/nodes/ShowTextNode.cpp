@@ -9,6 +9,8 @@ ShowTextNode::ShowTextNode() {
 void ShowTextNode::update() {
   auto text = readPin<RuntimeType::String>(0);
 
+  std::cout << "Show text update" << std::endl;
+
   if (text) {
     _textBoxState = text;
   } else {

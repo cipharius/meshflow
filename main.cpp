@@ -95,16 +95,16 @@ int main(int, char**) {
     NodeEditor::EnableShortcuts(!io.WantTextInput);
 
     if (NodeEditor::BeginCreate()) {
-      NodeEditor::PinId inputPinId, outputPinId;
+      NodeEditor::PinId startPinId, endPinId;
 
-      if (NodeEditor::QueryNewLink(&inputPinId, &outputPinId)) {
-        if (inputPinId && outputPinId) {
-          GenericPin* inputPin = GenericPin::from(inputPinId);
-          GenericPin* outputPin = GenericPin::from(outputPinId);
+      if (NodeEditor::QueryNewLink(&startPinId, &endPinId)) {
+        if (startPinId && endPinId) {
+          GenericPin* startPin = GenericPin::from(startPinId);
+          GenericPin* endPin = GenericPin::from(endPinId);
 
-          if (inputPin->kind() != outputPin->kind() && inputPin->type_name() == outputPin->type_name()) {
+          if (startPin->can_bind(endPin)) {
             if (NodeEditor::AcceptNewItem()) {
-              outputPin->bind(inputPin);
+              startPin->bind(endPin);
             }
           } else {
             NodeEditor::RejectNewItem();
@@ -120,6 +120,7 @@ int main(int, char**) {
       while (NodeEditor::QueryDeletedNode(&deletedNodeId)) {
         if (Node* node = Node::from(deletedNodeId)) {
           nodes.erase(node);
+          node->stop_update_loop();
           delete node;
         }
       }
@@ -187,6 +188,7 @@ int main(int, char**) {
       for (const char* node_type : NodeRegistry::node_types()) {
         if (ImGui::MenuItem(node_type)) {
           node = NodeRegistry::create_node(node_type);
+          node->start_update_loop();
         }
       }
 

@@ -8,7 +8,7 @@ SOURCES += $(IMGUI_DIR)/backends/imgui_impl_glfw.cpp $(IMGUI_DIR)/backends/imgui
 OBJS = $(addprefix build/, $(addsuffix .o, $(basename $(notdir $(SOURCES)))))
 
 CXXFLAGS = -std=c++17 -Isrc -Isrc/nodes -I$(IMGUI_DIR) -I$(IMGUI_DIR)/backends -I$(NODE_EDITOR_DIR) `pkg-config --cflags glfw3`
-CXXFLAGS += -g -Wall -Wformat
+CXXFLAGS += -g -Wall -Wformat -pthread
 LIBS = -lGL `pkg-config --static --libs glfw3`
 CFLAGS = $(CXXFLAGS)
 

@@ -3,6 +3,8 @@
 
 #include <string>
 #include <vector>
+#include <thread>
+#include <atomic>
 
 #include <imgui.h>
 #include <imgui_node_editor.h>
@@ -14,6 +16,8 @@ namespace NodeEditor = ax::NodeEditor;
 
 class Node {
   public:
+    static void update_loop(Node* node, std::atomic_flag *stop_signal);
+
     Node();
     Node(const Node&) = delete;
     virtual ~Node() = 0;
@@ -31,6 +35,8 @@ class Node {
     std::vector<std::shared_ptr<Link>> inbound_links();
     std::vector<std::shared_ptr<Link>> outbound_links();
     void render();
+    void start_update_loop();
+    void stop_update_loop();
 
   protected:
     template <class RT>
@@ -95,6 +101,8 @@ class Node {
     bool _firstRender;
     bool _renderWidget;
     NodeEditor::NodeId _id;
+    std::thread _thread;
+    std::atomic_flag _stopSignal;
 };
 
 #endif

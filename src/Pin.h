@@ -28,6 +28,7 @@ class GenericPin {
     RuntimeType* type();
     std::shared_ptr<Link> link();
     virtual const char* type_name() = 0;
+    virtual bool can_bind(GenericPin* otherGeneric) = 0;
     virtual void bind(GenericPin* otherGeneric) = 0;
     virtual void unbind() = 0;
 
@@ -67,11 +68,20 @@ class Pin : public GenericPin {
     constexpr RT* type() { return static_cast<RT*>( GenericPin::type() ); }
     constexpr const char* type_name() { return GenericPin::type()->type_name(); }
 
+    bool can_bind(GenericPin* otherGeneric) override {
+      if (!otherGeneric) return false;
+      if (this->parent_id() == otherGeneric->parent_id()) return false;
+      if (this->kind() == otherGeneric->kind()) return false;
+      if (this->type_name() != otherGeneric->type_name()) return false;
+      if (!Pin<RT>::cast(otherGeneric)) return false;
+      return true;
+    }
+
     void bind(GenericPin* otherGeneric) override {
-      if (this->parent_id() == otherGeneric->parent_id()) return;
+      if (!this->can_bind(otherGeneric)) return;
 
       Pin<RT>* other = Pin<RT>::cast(otherGeneric);
-      if (!other || this->kind() == other->kind()) return;
+      if (!other) return;
 
       NodeEditor::PinId inputPinId, outputPinId = 0;
 
@@ -86,7 +96,12 @@ class Pin : public GenericPin {
         outputPinId = other->id();
         inputPinId = this->id();
       }
+
       this->unbind();
+      other->unbind();
+
+      std::unique_lock channel_lock(_channelMutex);
+      std::unique_lock other_channel_lock(other->_channelMutex);
 
       _channel = ChannelSharedPtr<typename RT::type>(new Channel<typename RT::type>());
       _link = std::shared_ptr<Link>(new Link(inputPinId, outputPinId));
@@ -101,6 +116,7 @@ class Pin : public GenericPin {
     }
 
     void unbind() override {
+      std::unique_lock channel_lock(_channelMutex);
       if (!_link) return;
 
       GenericPin* otherGeneric;
@@ -111,29 +127,47 @@ class Pin : public GenericPin {
       }
 
       if (auto* other = Pin<RT>::cast(otherGeneric)) {
+        std::unique_lock other_channel_lock(other->_channelMutex);
+        other->_channel->reset();
         other->_channel.reset();
         other->_link.reset();
       }
 
+      _channel->reset();
       _channel.reset();
       _link.reset();
     }
 
     void write(std::shared_ptr<typename RT::type> value) {
-      this->type()->value = value;
-      if (!_channel) return;
-      _channel->push(value);
+      if (_kind == NodeEditor::PinKind::Input) return;
+
+      ChannelSharedPtr<typename RT::type> channel;
+      {
+        std::unique_lock channel_lock(_channelMutex);
+        this->type()->value = value;
+        if (!_channel) return;
+        channel = _channel;
+      }
+      channel->push(value);
     }
 
     std::shared_ptr<typename RT::type> read() {
-      if (!_channel) return this->type()->value;
-      return _channel->pull();
+      if (_kind == NodeEditor::PinKind::Output) return std::shared_ptr<typename RT::type>();
+
+      ChannelSharedPtr<typename RT::type> channel;
+      {
+        std::unique_lock channel_lock(_channelMutex);
+        if (!_channel) return std::shared_ptr<typename RT::type>();
+        channel = _channel;
+      }
+      return channel->pull();
     }
 
     Pin(const Pin<RT>&) = delete;
 
   protected:
     ChannelSharedPtr<typename RT::type> _channel;
+    std::mutex _channelMutex;
 };
 
 #endif
