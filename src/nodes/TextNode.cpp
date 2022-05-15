@@ -14,7 +14,8 @@ void TextNode::update() {
 
 void TextNode::render_widget() {
   ImGui::PushItemWidth(200);
-  if (ImGui::InputText(_label, _text, IM_ARRAYSIZE(_text), ImGuiInputTextFlags_EnterReturnsTrue)) {
+  ImGui::InputText(_label, _text, IM_ARRAYSIZE(_text));
+  if (ImGui::IsItemDeactivatedAfterEdit()) {
     this->resume_update_loop();
   }
   ImGui::PopItemWidth();
