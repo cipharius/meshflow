@@ -210,13 +210,6 @@ int main(int, char**) {
       }
     }
 
-    if (NodeEditor::NodeId hoveredNodeId = NodeEditor::GetHoveredNode()) {
-      if (ImGui::IsKeyPressed(ImGuiKey_Space)) {
-        Node* value = Node::from(hoveredNodeId);
-        value->update();
-      }
-    }
-
     NodeEditor::SetCurrentEditor(nullptr);
 
     ImGui::End();
