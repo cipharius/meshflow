@@ -1,6 +1,6 @@
 #include "Node.h"
 
-Node::Node() : _name(nullptr), _firstRender(true), _renderWidget(true) {
+Node::Node() : _name(nullptr), _firstRender(true), _renderWidget(true), _isUpdateLoopStopping(false) {
   _id = NodeEditor::NodeId(this);
   (void)_inputPins;
   (void)_outputPins;
@@ -8,8 +8,8 @@ Node::Node() : _name(nullptr), _firstRender(true), _renderWidget(true) {
 
 Node::~Node() {}
 
-void Node::update_loop(Node *node, std::atomic_flag *stop_signal) {
-  while (stop_signal->test_and_set()) {
+void Node::update_loop(Node *node) {
+  while (!node->is_stopping()) {
     node->update();
     std::this_thread::yield();
   }
@@ -140,11 +140,31 @@ void Node::render() {
 }
 
 void Node::start_update_loop() {
-  _stopSignal.test_and_set();
-  _thread = std::thread(Node::update_loop, this, &_stopSignal);
+  _thread = std::thread(Node::update_loop, this);
 }
 
 void Node::stop_update_loop() {
-  _stopSignal.clear();
+   _isUpdateLoopStopping = true;
+
+  for (auto& pin : _inputPins) {
+    pin->close();
+  }
+
+  resume_update_loop();
+
   _thread.join();
+}
+
+void Node::pause_update_loop() {
+  if (_isUpdateLoopStopping) return;
+  std::unique_lock lock(_pauseMutex);
+  _onResume.wait(lock);
+}
+
+void Node::resume_update_loop() {
+  _onResume.notify_all();
+}
+
+bool Node::is_stopping() {
+  return _isUpdateLoopStopping;
 }

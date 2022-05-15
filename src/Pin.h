@@ -2,16 +2,13 @@
 #define PIN_H
 
 #include <string>
+#include <mutex>
+#include <condition_variable>
+
 #include <imgui_node_editor.h>
 
 #include "RuntimeType.h"
-#include "Channel.h"
 #include "Link.h"
-
-#include <iostream>
-
-template <class T>
-using ChannelSharedPtr = std::shared_ptr<Channel<T>>;
 
 namespace NodeEditor = ax::NodeEditor;
 
@@ -31,6 +28,7 @@ class GenericPin {
     virtual bool can_bind(GenericPin* otherGeneric) = 0;
     virtual void bind(GenericPin* otherGeneric) = 0;
     virtual void unbind() = 0;
+    virtual void close() = 0;
 
     ImVec2 calc_size();
     void render(int offset = 0);
@@ -57,7 +55,7 @@ class Pin : public GenericPin {
     }
 
     constexpr Pin(NodeEditor::NodeId parentId, std::string name, RT* type, NodeEditor::PinKind kind)
-    : GenericPin(parentId, name, type, kind) {
+    : GenericPin(parentId, name, type, kind), _connectedPin(nullptr), _hasChanged(false), _isClosed(false) {
       _id = NodeEditor::PinId(this);
     }
 
@@ -69,11 +67,12 @@ class Pin : public GenericPin {
     constexpr const char* type_name() { return GenericPin::type()->type_name(); }
 
     bool can_bind(GenericPin* otherGeneric) override {
+      if (_isClosed) return false;
       if (!otherGeneric) return false;
+      if (_connectedPin == otherGeneric) return false;
       if (this->parent_id() == otherGeneric->parent_id()) return false;
       if (this->kind() == otherGeneric->kind()) return false;
       if (this->type_name() != otherGeneric->type_name()) return false;
-      if (!Pin<RT>::cast(otherGeneric)) return false;
       return true;
     }
 
@@ -86,13 +85,9 @@ class Pin : public GenericPin {
       NodeEditor::PinId inputPinId, outputPinId = 0;
 
       if (this->kind() == NodeEditor::PinKind::Output) {
-        if (_link && _link->inputPinId() == other->id()) return;
-
         outputPinId = this->id();
         inputPinId = other->id();
       } else {
-        if (_link && _link->outputPinId() == other->id()) return;
-
         outputPinId = other->id();
         inputPinId = this->id();
       }
@@ -100,74 +95,94 @@ class Pin : public GenericPin {
       this->unbind();
       other->unbind();
 
-      std::unique_lock channel_lock(_channelMutex);
-      std::unique_lock other_channel_lock(other->_channelMutex);
+      std::unique_lock lock(_mutex);
+      std::unique_lock other_lock(other->_mutex);
 
-      _channel = ChannelSharedPtr<typename RT::type>(new Channel<typename RT::type>());
+      _connectedPin = other;
+
       _link = std::shared_ptr<Link>(new Link(inputPinId, outputPinId));
-      other->_channel = _channel;
       other->_link = _link;
+      other->_connectedPin = this;
 
-      if (this->kind() == NodeEditor::PinKind::Output) {
-        _channel->push(this->type()->value);
+      if (this->kind() == NodeEditor::PinKind::Input) {
+        this->_hasChanged = true;
+        this->_onUpdate.notify_all();
       } else {
-        _channel->push(other->type()->value);
+        other->_hasChanged = true;
+        other->_onUpdate.notify_all();
       }
     }
 
     void unbind() override {
-      std::unique_lock channel_lock(_channelMutex);
-      if (!_link) return;
+      std::unique_lock lock(_mutex);
+      if (!_connectedPin) return;
+      std::unique_lock other_lock(_connectedPin->_mutex);
 
-      GenericPin* otherGeneric;
-      if (this->id() == _link->outputPinId()) {
-        otherGeneric = GenericPin::from(_link->inputPinId());
-      } else {
-        otherGeneric = GenericPin::from(_link->outputPinId());
-      }
-
-      if (auto* other = Pin<RT>::cast(otherGeneric)) {
-        std::unique_lock other_channel_lock(other->_channelMutex);
-        other->_channel->reset();
-        other->_channel.reset();
-        other->_link.reset();
-      }
-
-      _channel->reset();
-      _channel.reset();
+      _connectedPin->_link.reset();
       _link.reset();
+
+      auto* other = _connectedPin;
+      _connectedPin->_connectedPin = nullptr;
+      _connectedPin = nullptr;
+
+      if (this->kind() == NodeEditor::PinKind::Input) {
+        _hasChanged = true;
+        _onUpdate.notify_all();
+      } else {
+        other->_hasChanged = true;
+        other->_onUpdate.notify_all();
+      }
+    }
+
+    void close() override {
+      _isClosed = true;
+      _hasChanged = true;
+      this->type()->value.reset();
+      _onUpdate.notify_all();
     }
 
     void write(std::shared_ptr<typename RT::type> value) {
+      if (_isClosed) return;
       if (_kind == NodeEditor::PinKind::Input) return;
 
-      ChannelSharedPtr<typename RT::type> channel;
-      {
-        std::unique_lock channel_lock(_channelMutex);
-        this->type()->value = value;
-        if (!_channel) return;
-        channel = _channel;
+      std::unique_lock lock(_mutex);
+      if (value && this->type()->value && *value == *(this->type()->value)) return;
+      this->type()->value = value;
+
+      if (_connectedPin) {
+        std::unique_lock other_lock(_connectedPin->_mutex);
+        _connectedPin->_hasChanged = true;
+        _connectedPin->_onUpdate.notify_all();
       }
-      channel->push(value);
     }
 
     std::shared_ptr<typename RT::type> read() {
+      if (_isClosed) return std::shared_ptr<typename RT::type>();
       if (_kind == NodeEditor::PinKind::Output) return std::shared_ptr<typename RT::type>();
 
-      ChannelSharedPtr<typename RT::type> channel;
-      {
-        std::unique_lock channel_lock(_channelMutex);
-        if (!_channel) return std::shared_ptr<typename RT::type>();
-        channel = _channel;
+      std::unique_lock lock(_mutex);
+      if (!_hasChanged) {
+        _onUpdate.wait(lock);
       }
-      return channel->pull();
+
+      if (!_connectedPin) {
+        _hasChanged = false;
+        return std::shared_ptr<typename RT::type>();
+      }
+
+      std::unique_lock other_lock(_connectedPin->_mutex);
+      _hasChanged = false;
+      return _connectedPin->type()->value;
     }
 
     Pin(const Pin<RT>&) = delete;
 
   protected:
-    ChannelSharedPtr<typename RT::type> _channel;
-    std::mutex _channelMutex;
+    Pin<RT>* _connectedPin;
+    std::mutex _mutex;
+    std::condition_variable _onUpdate;
+    bool _hasChanged;
+    bool _isClosed;
 };
 
 #endif

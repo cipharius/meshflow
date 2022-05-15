@@ -2,6 +2,7 @@
 #define TEXTNODE_H
 
 #include <iostream>
+#include <condition_variable>
 
 #include "imgui.h"
 
@@ -17,10 +18,7 @@ class TextNode : public Node {
     void render_widget() override;
 
   private:
-    // static int input_text_callback(ImGuiInputTextCallbackData* data);
-
     char _text[1024 * 16];
-    bool _updated;
     char _label[32];
 };
 

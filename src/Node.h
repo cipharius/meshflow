@@ -16,7 +16,7 @@ namespace NodeEditor = ax::NodeEditor;
 
 class Node {
   public:
-    static void update_loop(Node* node, std::atomic_flag *stop_signal);
+    static void update_loop(Node* node);
 
     Node();
     Node(const Node&) = delete;
@@ -37,6 +37,9 @@ class Node {
     void render();
     void start_update_loop();
     void stop_update_loop();
+    void pause_update_loop();
+    void resume_update_loop();
+    bool is_stopping();
 
   protected:
     template <class RT>
@@ -98,11 +101,13 @@ class Node {
 
   private:
     const char* _name;
-    bool _firstRender;
-    bool _renderWidget;
     NodeEditor::NodeId _id;
     std::thread _thread;
-    std::atomic_flag _stopSignal;
+    std::mutex _pauseMutex;
+    std::condition_variable _onResume;
+    bool _firstRender;
+    bool _renderWidget;
+    bool _isUpdateLoopStopping;
 };
 
 #endif
