@@ -226,8 +226,10 @@ int main(int, char**) {
     glfwSwapBuffers(window);
   }
 
-  for (Node* node : nodes)
+  for (Node* node : nodes) {
+    node->stop_update_loop();
     delete node;
+  }
 
   NodeEditor::DestroyEditor(m_Context);
 
