@@ -37,8 +37,9 @@ std::vector<std::shared_ptr<Link>> Node::inbound_links() {
   result.reserve(_inputPins.size());
 
   for (auto& inputPin : _inputPins) {
-    if (auto&& link = inputPin->link()) {
-      result.push_back(std::move(link));
+    auto links = inputPin->links();
+    if (links.size() > 0) {
+      result.push_back(std::move(links[0]));
     }
   }
 
@@ -51,7 +52,7 @@ std::vector<std::shared_ptr<Link>> Node::outbound_links() {
   result.reserve(_outputPins.size());
 
   for (auto& outputPin : _outputPins) {
-    if (auto&& link = outputPin->link()) {
+    for (auto&& link : outputPin->links()) {
       result.push_back(std::move(link));
     }
   }

@@ -128,7 +128,7 @@ int main(int, char**) {
       NodeEditor::LinkId deletedLinkId;
       while (NodeEditor::QueryDeletedLink(&deletedLinkId)) {
         if (auto* link = Link::from(deletedLinkId)) {
-          if (auto* pin = GenericPin::from(link->outputPinId())) {
+          if (auto* pin = GenericPin::from(link->inputPinId())) {
             pin->unbind();
           }
         }

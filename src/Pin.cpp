@@ -28,8 +28,8 @@ RuntimeType* GenericPin::type() {
   return _type;
 }
 
-std::shared_ptr<Link> GenericPin::link() {
-  return _link;
+std::vector<std::shared_ptr<Link>> GenericPin::links() {
+  return _links;
 }
 
 GenericPin* GenericPin::from(NodeEditor::PinId pinId) {

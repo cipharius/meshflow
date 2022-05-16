@@ -2,6 +2,7 @@
 #define PIN_H
 
 #include <string>
+#include <vector>
 #include <mutex>
 #include <condition_variable>
 
@@ -23,10 +24,11 @@ class GenericPin {
     NodeEditor::PinKind kind();
     std::string name();
     RuntimeType* type();
-    std::shared_ptr<Link> link();
+    std::vector<std::shared_ptr<Link>> links();
     virtual const char* type_name() = 0;
     virtual bool can_bind(GenericPin* otherGeneric) = 0;
     virtual void bind(GenericPin* otherGeneric) = 0;
+    virtual void unbind(GenericPin* otherGeneric) = 0;
     virtual void unbind() = 0;
     virtual void close() = 0;
 
@@ -40,7 +42,7 @@ class GenericPin {
     std::string _name;
     NodeEditor::PinKind _kind;
     NodeEditor::PinId _id;
-    std::shared_ptr<Link> _link;
+    std::vector<std::shared_ptr<Link>> _links;
 
   private:
     RuntimeType* _type;
@@ -55,7 +57,7 @@ class Pin : public GenericPin {
     }
 
     constexpr Pin(NodeEditor::NodeId parentId, std::string name, RT* type, NodeEditor::PinKind kind)
-    : GenericPin(parentId, name, type, kind), _connectedPin(nullptr), _hasChanged(false), _isClosed(false) {
+    : GenericPin(parentId, name, type, kind), _hasChanged(false), _isClosed(false) {
       _id = NodeEditor::PinId(this);
     }
 
@@ -69,10 +71,14 @@ class Pin : public GenericPin {
     bool can_bind(GenericPin* otherGeneric) override {
       if (_isClosed) return false;
       if (!otherGeneric) return false;
-      if (_connectedPin == otherGeneric) return false;
       if (this->parent_id() == otherGeneric->parent_id()) return false;
       if (this->kind() == otherGeneric->kind()) return false;
       if (this->type_name() != otherGeneric->type_name()) return false;
+
+      for (auto* connectedPin : _connectedPins) {
+        if (connectedPin == otherGeneric) return false;
+      }
+
       return true;
     }
 
@@ -87,22 +93,24 @@ class Pin : public GenericPin {
       if (this->kind() == NodeEditor::PinKind::Output) {
         outputPinId = this->id();
         inputPinId = other->id();
+
+        other->unbind();
       } else {
         outputPinId = other->id();
         inputPinId = this->id();
-      }
 
-      this->unbind();
-      other->unbind();
+        this->unbind();
+      }
 
       std::unique_lock lock(_mutex);
       std::unique_lock other_lock(other->_mutex);
 
-      _connectedPin = other;
+      auto link = std::shared_ptr<Link>(new Link(inputPinId, outputPinId));
+      _links.push_back(link);
+      _connectedPins.push_back(other);
 
-      _link = std::shared_ptr<Link>(new Link(inputPinId, outputPinId));
-      other->_link = _link;
-      other->_connectedPin = this;
+      other->_links.push_back(link);
+      other->_connectedPins.push_back(this);
 
       if (this->kind() == NodeEditor::PinKind::Input) {
         this->_hasChanged = true;
@@ -113,17 +121,34 @@ class Pin : public GenericPin {
       }
     }
 
-    void unbind() override {
+    void unbind(GenericPin* otherGeneric) override {
       std::unique_lock lock(_mutex);
-      if (!_connectedPin) return;
-      std::unique_lock other_lock(_connectedPin->_mutex);
 
-      _connectedPin->_link.reset();
-      _link.reset();
+      int pinIndex = -1;
+      for (unsigned long int i = 0; i < _connectedPins.size(); i++) {
+        if (_connectedPins[i] == otherGeneric) {
+          pinIndex = i;
+          break;
+        }
+      }
+      if (pinIndex == -1) return;
 
-      auto* other = _connectedPin;
-      _connectedPin->_connectedPin = nullptr;
-      _connectedPin = nullptr;
+      Pin<RT>* other = Pin<RT>::cast(otherGeneric);
+      if (!other) return;
+
+      std::unique_lock other_lock(other->_mutex);
+
+      std::shared_ptr<Link> link = _links[pinIndex];
+      for (unsigned long int i = 0; i < other->_links.size(); i++) {
+        if (link == other->_links[i]) {
+          other->_links.erase(other->_links.begin() + i);
+          other->_connectedPins.erase(other->_connectedPins.begin() + i);
+          break;
+        }
+      }
+      _links.erase(_links.begin() + pinIndex);
+      _connectedPins.erase(_connectedPins.begin() + pinIndex);
+      link.reset();
 
       if (this->kind() == NodeEditor::PinKind::Input) {
         _hasChanged = true;
@@ -131,6 +156,13 @@ class Pin : public GenericPin {
       } else {
         other->_hasChanged = true;
         other->_onUpdate.notify_all();
+      }
+    }
+
+    void unbind() override {
+      auto connectedPinsCopy = _connectedPins;
+      for (auto* connectedPin : connectedPinsCopy) {
+        this->unbind(connectedPin);
       }
     }
 
@@ -149,10 +181,10 @@ class Pin : public GenericPin {
       if (value && this->type()->value && *value == *(this->type()->value)) return;
       this->type()->value = value;
 
-      if (_connectedPin) {
-        std::unique_lock other_lock(_connectedPin->_mutex);
-        _connectedPin->_hasChanged = true;
-        _connectedPin->_onUpdate.notify_all();
+      for (auto* connectedPin : _connectedPins) {
+        std::unique_lock other_lock(connectedPin->_mutex);
+        connectedPin->_hasChanged = true;
+        connectedPin->_onUpdate.notify_all();
       }
     }
 
@@ -165,20 +197,22 @@ class Pin : public GenericPin {
         _onUpdate.wait(lock);
       }
 
-      if (!_connectedPin) {
+      if (_connectedPins.empty()) {
         _hasChanged = false;
         return std::shared_ptr<typename RT::type>();
       }
 
-      std::unique_lock other_lock(_connectedPin->_mutex);
+      auto* connectedPin = _connectedPins[0];
+
+      std::unique_lock other_lock(connectedPin->_mutex);
       _hasChanged = false;
-      return _connectedPin->type()->value;
+      return connectedPin->type()->value;
     }
 
     Pin(const Pin<RT>&) = delete;
 
   protected:
-    Pin<RT>* _connectedPin;
+    std::vector<Pin<RT>*> _connectedPins;
     std::mutex _mutex;
     std::condition_variable _onUpdate;
     bool _hasChanged;
