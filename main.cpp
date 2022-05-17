@@ -207,7 +207,7 @@ int main(int, char**) {
 
     if (NodeEditor::PinId hoveredPinId = NodeEditor::GetHoveredPin()) {
       if (auto* pin = GenericPin::from(hoveredPinId)) {
-        ImGui::SetTooltip("PinID: %p\nType: %s", pin->id().AsPointer(), pin->type_name());
+        ImGui::SetTooltip("Type: %s", pin->type_name());
       }
     }
 
