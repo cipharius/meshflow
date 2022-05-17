@@ -10,16 +10,8 @@ bool RuntimeType::Type<T, N>::has_value() {
   return (bool)value;
 }
 
-template <typename T, const char* N>
-std::string RuntimeType::Type<T, N>::to_string() {
-  if (!value) return "";
-
-  std::stringstream ss;
-  ss << *value;
-  return ss.str();
-}
-
-
 INSTANTIATE_TYPE (String, std::string)
 INSTANTIATE_TYPE (Int, int)
 INSTANTIATE_TYPE (Float, float)
+INSTANTIATE_TYPE (Point, (std::array<float, 3>))
+INSTANTIATE_TYPE (PointVec, (std::vector<std::array<float, 3>>))

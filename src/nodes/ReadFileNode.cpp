@@ -8,6 +8,7 @@ ReadFileNode::ReadFileNode() {
 }
 
 void ReadFileNode::update() {
+  this->wait_for_input();
   auto filePath = readPin<RuntimeType::String>(0);
 
   if (auto value = filePath) {

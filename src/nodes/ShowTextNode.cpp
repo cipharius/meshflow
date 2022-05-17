@@ -7,6 +7,7 @@ ShowTextNode::ShowTextNode() {
 }
 
 void ShowTextNode::update() {
+  this->wait_for_input();
   auto text = readPin<RuntimeType::String>(0);
 
   if (text) {

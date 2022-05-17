@@ -2,15 +2,22 @@
 #define RUNTIMETYPE_H
 
 #include <string>
+#include <vector>
 #include <sstream>
 #include <memory>
 
+namespace {
+  // Escapes () around complex types
+  template<typename T> struct unwrap;
+  template<typename T, typename U> struct unwrap<T(U)> { typedef U type; };
+}
+
 #define DECLARE_TYPE(NAME, TYPE) \
 constexpr static const char type_##NAME[] = #NAME; \
-using NAME = Type<TYPE, type_##NAME>;
+using NAME = Type<typename unwrap<void(TYPE)>::type, type_##NAME>;
 
 #define INSTANTIATE_TYPE(NAME, TYPE) \
-template class RuntimeType::Type<TYPE, RuntimeType::type_##NAME>;
+template class RuntimeType::Type<typename unwrap<void(TYPE)>::type, RuntimeType::type_##NAME>;
 
 class RuntimeType {
   public:
@@ -18,11 +25,12 @@ class RuntimeType {
     virtual ~RuntimeType() = 0;
     virtual const char* type_name() = 0;
     virtual bool has_value() = 0;
-    virtual std::string to_string() = 0;
 
     DECLARE_TYPE (String, std::string)
     DECLARE_TYPE (Int, int)
     DECLARE_TYPE (Float, float)
+    DECLARE_TYPE (Point, (std::array<float, 3>))
+    DECLARE_TYPE (PointVec, (std::vector<std::array<float, 3>>))
 };
 
 template<typename T, const char* N>
@@ -37,7 +45,6 @@ class RuntimeType::Type final : public RuntimeType {
     explicit Type(T value);
 
     bool has_value();
-    std::string to_string();
 
     constexpr static RuntimeType::Type<T, N>* cast(RuntimeType* abstract) {
       if (abstract->type_name() != N) return nullptr;
