@@ -1,5 +1,4 @@
 #include "WriteObjFileNode.h"
-#include <iostream>
 
 REGISTER_NODE(WriteObjFileNode, "Write .obj file");
 
