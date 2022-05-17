@@ -39,34 +39,35 @@ class Node {
     void stop_update_loop();
     void pause_update_loop();
     void resume_update_loop();
+    void wait_for_input();
     bool is_stopping();
 
   protected:
     template <class RT>
     constexpr void addInputPin(std::string name) {
       static_assert(std::is_base_of<RuntimeType, RT>::value, "RT not derived from RuntimeType");
-      auto* pin = new Pin<RT>(_id, name, new RT(), NodeEditor::PinKind::Input);
+      auto* pin = new Pin<RT>(_id, name, new RT(), NodeEditor::PinKind::Input, &_onInput);
       _inputPins.emplace_back(pin);
     }
 
     template <class RT, class T>
     constexpr void addInputPin(std::string name, T value) {
       static_assert(std::is_base_of<RuntimeType, RT>::value, "RT not derived from RuntimeType");
-      auto* pin = new Pin<RT>(_id, name, new RT(value), NodeEditor::PinKind::Input);
+      auto* pin = new Pin<RT>(_id, name, new RT(value), NodeEditor::PinKind::Input, &_onInput);
       _inputPins.emplace_back(pin);
     }
 
     template <class RT>
     constexpr void addOutputPin(std::string name){
       static_assert(std::is_base_of<RuntimeType, RT>::value, "RT not derived from RuntimeType");
-      auto* pin = new Pin<RT>(_id, name, new RT(), NodeEditor::PinKind::Output);
+      auto* pin = new Pin<RT>(_id, name, new RT(), NodeEditor::PinKind::Output, nullptr);
       _outputPins.emplace_back(pin);
     }
 
     template <class RT, class T>
     constexpr void addOutputPin(std::string name, T value){
       static_assert(std::is_base_of<RuntimeType, RT>::value, "RT not derived from RuntimeType");
-      auto* pin = new Pin<RT>(_id, name, new RT(value), NodeEditor::PinKind::Output);
+      auto* pin = new Pin<RT>(_id, name, new RT(value), NodeEditor::PinKind::Output, nullptr);
       _outputPins.emplace_back(pin);
     }
 
@@ -129,6 +130,7 @@ class Node {
     std::thread _thread;
     std::mutex _pauseMutex;
     std::condition_variable _onResume;
+    std::condition_variable _onInput;
     bool _firstRender;
     bool _renderWidget;
     bool _isUpdateLoopStopping;

@@ -151,7 +151,8 @@ void Node::stop_update_loop() {
     pin->close();
   }
 
-  resume_update_loop();
+  _onInput.notify_all();
+  _onResume.notify_all();
 
   _thread.join();
 }
@@ -164,6 +165,12 @@ void Node::pause_update_loop() {
 
 void Node::resume_update_loop() {
   _onResume.notify_all();
+}
+
+void Node::wait_for_input() {
+  if (_isUpdateLoopStopping) return;
+  std::unique_lock lock(_pauseMutex);
+  _onInput.wait(lock);
 }
 
 bool Node::is_stopping() {
