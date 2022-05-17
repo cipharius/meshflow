@@ -64,6 +64,7 @@ int main(int, char**) {
   std::unordered_set<Node*> nodes;
 
   NodeEditor::NodeId contextNodeId = 0;
+  GenericPin* contextPin = 0;
   ImVec2 openPopupPos;
 
   while (!glfwWindowShouldClose(window)) {
@@ -109,6 +110,24 @@ int main(int, char**) {
           } else {
             NodeEditor::RejectNewItem();
           }
+        }
+      }
+
+      NodeEditor::PinId pinId = 0;
+      if (NodeEditor::QueryNewNode(&pinId)) {
+        GenericPin* pin = GenericPin::from(pinId);
+        if (pin) {
+          ImGui::SetTooltip("New node");
+
+          if (NodeEditor::AcceptNewItem()) {
+            contextPin = pin;
+            NodeEditor::Suspend();
+            openPopupPos = ImGui::GetMousePos();
+            ImGui::OpenPopup("CreateFromPin");
+            NodeEditor::Resume();
+          }
+        } else {
+          NodeEditor::RejectNewItem();
         }
       }
     }
@@ -189,14 +208,53 @@ int main(int, char**) {
       for (const char* node_type : NodeRegistry::node_types()) {
         if (ImGui::MenuItem(node_type)) {
           node = NodeRegistry::create_node(node_type);
+        }
+      }
+
+      if (node) {
+        ImVec2 newNodePos = NodeEditor::ScreenToCanvas(openPopupPos);
+
+        node->start_update_loop();
+        nodes.insert(node);
+        NodeEditor::SetNodePosition(node->id(), newNodePos);
+      }
+
+      ImGui::EndPopup();
+    }
+
+    if (ImGui::BeginPopup("CreateFromPin", ImGuiWindowFlags_NoMove)) {
+      ImGui::TextUnformatted("Create new node");
+      ImGui::Separator();
+
+      Node* node = nullptr;
+      for (const char* node_type : NodeRegistry::node_types()) {
+        if (ImGui::MenuItem(node_type)) {
+          node = NodeRegistry::create_node(node_type);
           node->start_update_loop();
         }
       }
 
       if (node) {
         ImVec2 newNodePos = NodeEditor::ScreenToCanvas(openPopupPos);
+
         nodes.insert(node);
         NodeEditor::SetNodePosition(node->id(), newNodePos);
+
+        if (contextPin->kind() == NodeEditor::PinKind::Input) {
+          for (auto& pin : node->output_pins()) {
+            if (pin->type()->type_name() == contextPin->type()->type_name()) {
+              pin->bind(contextPin);
+              break;
+            }
+          }
+        } else {
+          for (auto& pin : node->input_pins()) {
+            if (pin->type()->type_name() == contextPin->type()->type_name()) {
+              pin->bind(contextPin);
+              break;
+            }
+          }
+        }
       }
 
       ImGui::EndPopup();

@@ -1,6 +1,8 @@
 #include "Node.h"
 
-Node::Node() : _name(nullptr), _firstRender(true), _renderWidget(true), _isUpdateLoopStopping(false) {
+Node::Node() :
+_name(nullptr), _firstRender(true), _renderWidget(true),
+_isUpdateLoopStopping(false), _isFirstUpdate(true) {
   _id = NodeEditor::NodeId(this);
   (void)_inputPins;
   (void)_outputPins;
@@ -11,6 +13,7 @@ Node::~Node() {}
 void Node::update_loop(Node *node) {
   while (!node->is_stopping()) {
     node->update();
+    node->_isFirstUpdate = false;
     std::this_thread::yield();
   }
 }
@@ -60,6 +63,15 @@ std::vector<std::shared_ptr<Link>> Node::outbound_links() {
   result.shrink_to_fit();
   return result;
 }
+
+const std::vector<std::shared_ptr<GenericPin>> Node::input_pins() {
+  return std::vector<std::shared_ptr<GenericPin>>(_inputPins);
+}
+
+const std::vector<std::shared_ptr<GenericPin>> Node::output_pins() {
+  return std::vector<std::shared_ptr<GenericPin>>(_outputPins);
+}
+
 
 void Node::render() {
   ImGuiIO& io = ImGui::GetIO();
@@ -169,6 +181,7 @@ void Node::resume_update_loop() {
 
 void Node::wait_for_input() {
   if (_isUpdateLoopStopping) return;
+  if (_isFirstUpdate) return;
   std::unique_lock lock(_pauseMutex);
   _onInput.wait(lock);
 }

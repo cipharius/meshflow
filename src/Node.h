@@ -34,6 +34,8 @@ class Node {
     void assign_name(const char* name);
     std::vector<std::shared_ptr<Link>> inbound_links();
     std::vector<std::shared_ptr<Link>> outbound_links();
+    const std::vector<std::shared_ptr<GenericPin>> input_pins();
+    const std::vector<std::shared_ptr<GenericPin>> output_pins();
     void render();
     void start_update_loop();
     void stop_update_loop();
@@ -121,8 +123,8 @@ class Node {
       }
     }
 
-    std::vector<std::unique_ptr<GenericPin>> _inputPins;
-    std::vector<std::unique_ptr<GenericPin>> _outputPins;
+    std::vector<std::shared_ptr<GenericPin>> _inputPins;
+    std::vector<std::shared_ptr<GenericPin>> _outputPins;
 
   private:
     const char* _name;
@@ -134,6 +136,7 @@ class Node {
     bool _firstRender;
     bool _renderWidget;
     bool _isUpdateLoopStopping;
+    bool _isFirstUpdate;
 };
 
 #endif
