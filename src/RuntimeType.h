@@ -6,6 +6,8 @@
 #include <sstream>
 #include <memory>
 
+#include "Block.h"
+
 namespace {
   // Escapes () around complex types
   template<typename T> struct unwrap;
@@ -31,6 +33,7 @@ class RuntimeType {
     DECLARE_TYPE (Float, float)
     DECLARE_TYPE (Point, (std::array<float, 3>))
     DECLARE_TYPE (PointVec, (std::vector<std::array<float, 3>>))
+    DECLARE_TYPE (Block, Block)
 };
 
 template<typename T, const char* N>

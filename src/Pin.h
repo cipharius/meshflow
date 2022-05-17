@@ -173,7 +173,7 @@ class Pin : public GenericPin {
       if (_kind == NodeEditor::PinKind::Input) return;
 
       std::unique_lock lock(_mutex);
-      if (value && this->type()->value && *value == *(this->type()->value)) return;
+      if (value && this->type()->value && value == this->type()->value) return;
       this->type()->value = value;
 
       for (auto* connectedPin : _connectedPins) {
