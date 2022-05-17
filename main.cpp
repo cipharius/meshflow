@@ -173,6 +173,7 @@ int main(int, char**) {
       if (auto* node = Node::from(contextNodeId)) {
         if (ImGui::MenuItem("Delete")) {
           nodes.erase(node);
+          node->stop_update_loop();
           delete node;
         }
       }
