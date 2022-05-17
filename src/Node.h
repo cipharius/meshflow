@@ -96,6 +96,30 @@ class Node {
       }
     }
 
+    template <class RT>
+    constexpr void writePin(long unsigned int i, std::shared_ptr<typename RT::type> value) {
+      static_assert(std::is_base_of<RuntimeType, RT>::value, "RT not derived from RuntimeType");
+      if (i >= _outputPins.size()) return;
+
+      if (auto& genericPin = _outputPins[i]) {
+        if (auto* pin = Pin<RT>::cast( &(*genericPin) )) {
+          pin->write(value);
+        }
+      }
+    }
+
+    template <class RT>
+    constexpr void resetPin(long unsigned int i) {
+      static_assert(std::is_base_of<RuntimeType, RT>::value, "RT not derived from RuntimeType");
+      if (i >= _outputPins.size()) return;
+
+      if (auto& genericPin = _outputPins[i]) {
+        if (auto* pin = Pin<RT>::cast( &(*genericPin) )) {
+          pin->write(std::shared_ptr<typename RT::type>());
+        }
+      }
+    }
+
     std::vector<std::unique_ptr<GenericPin>> _inputPins;
     std::vector<std::unique_ptr<GenericPin>> _outputPins;
 

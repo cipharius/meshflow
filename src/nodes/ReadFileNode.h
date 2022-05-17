@@ -2,7 +2,11 @@
 #define READFILENODE_H
 
 #include <string>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
 #include <iostream>
+
 #include <imgui_node_editor.h>
 
 #include "Node.h"

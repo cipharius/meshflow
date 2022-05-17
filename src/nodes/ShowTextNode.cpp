@@ -17,9 +17,11 @@ void ShowTextNode::update() {
 }
 
 void ShowTextNode::render_widget() {
+  ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + 500);
   if (_textBoxState) {
     ImGui::TextUnformatted(_textBoxState->c_str());
   } else {
     ImGui::TextColored(ImVec4(1, 0, 0, 1), "No input");
   }
+  ImGui::PopTextWrapPos();
 }

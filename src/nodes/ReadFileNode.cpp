@@ -3,18 +3,28 @@
 REGISTER_NODE(ReadFileNode, "Read file");
 
 ReadFileNode::ReadFileNode() {
-  addInputPin<RuntimeType::String>("File path", "Test");
-
-  addOutputPin<RuntimeType::String>("Content", "Boop");
+  addInputPin<RuntimeType::String>("File path");
+  addOutputPin<RuntimeType::String>("Content");
 }
 
 void ReadFileNode::update() {
   auto filePath = readPin<RuntimeType::String>(0);
 
   if (auto value = filePath) {
-    std::cout << "File path: " << *value << std::endl;
-    writePin<RuntimeType::String>(0, *value);
+    std::filesystem::path path(*value);
+
+    if (std::filesystem::is_regular_file(path)) {
+      std::ifstream file (std::filesystem::absolute(path), std::ifstream::in);
+      std::stringstream ss;
+
+      ss << file.rdbuf();
+      file.close();
+
+      writePin<RuntimeType::String>(0, std::make_shared<std::string>(std::move(ss.str())));
+    } else {
+      resetPin<RuntimeType::String>(0);
+    }
   } else {
-    std::cout << "No file path" << std::endl;
+    resetPin<RuntimeType::String>(0);
   }
 }
