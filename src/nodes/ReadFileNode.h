@@ -17,6 +17,11 @@ class ReadFileNode : public Node {
   public:
     ReadFileNode();
     void update() override;
+    void render_widget() override;
+
+  private:
+    std::string _message;
+    bool _hasError;
 };
 
 
