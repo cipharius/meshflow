@@ -14,5 +14,7 @@ pkgs.mkShell {
 
     gdb
     tig
+    git
+    kakoune
   ];
 }
