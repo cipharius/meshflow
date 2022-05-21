@@ -105,7 +105,7 @@ class Pin : public GenericPin {
       std::unique_lock lock(_mutex);
       std::unique_lock other_lock(other->_mutex);
 
-      auto link = std::shared_ptr<Link>(new Link(inputPinId, outputPinId));
+      auto link = std::shared_ptr<Link>(new Link(outputPinId, inputPinId));
       _links.push_back(link);
       _connectedPins.push_back(other);
 
@@ -117,6 +117,7 @@ class Pin : public GenericPin {
       } else {
         other->_onInput->notify_all();
       }
+      link->activity_animation();
     }
 
     void unbind(GenericPin* otherGeneric) override {
@@ -176,8 +177,9 @@ class Pin : public GenericPin {
       if (value && this->type()->value && value == this->type()->value) return;
       this->type()->value = value;
 
-      for (auto* connectedPin : _connectedPins) {
-        connectedPin->_onInput->notify_all();
+      for (unsigned long int i = 0; i < _connectedPins.size(); i++) {
+        _connectedPins[i]->_onInput->notify_all();
+        _links[i]->activity_animation();
       }
     }
 

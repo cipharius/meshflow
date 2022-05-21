@@ -155,27 +155,6 @@ int main(int, char**) {
     }
     NodeEditor::EndDelete();
 
-    for (Node* node : nodes) {
-      if (node->is_first_render()) {
-        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0);
-        node->render();
-        ImGui::PopStyleVar();
-
-        ImVec2 nodeSize = NodeEditor::GetNodeSize(node->id());
-        ImVec2 nodePos = NodeEditor::GetNodePosition(node->id());
-        ImVec2 nodeNewPos = ImVec2(nodePos.x - nodeSize.x/2, nodePos.y - nodeSize.y/2);
-        NodeEditor::SetNodePosition(node->id(), nodeNewPos);
-      }
-
-      node->render();
-    }
-
-    for (Node* node : nodes) {
-      for (auto& link : node->outbound_links()) {
-        link->render();
-      }
-    }
-
     NodeEditor::Suspend();
     if (NodeEditor::ShowNodeContextMenu(&contextNodeId)) {
       openPopupPos = ImGui::GetMousePos();
@@ -212,11 +191,8 @@ int main(int, char**) {
       }
 
       if (node) {
-        ImVec2 newNodePos = NodeEditor::ScreenToCanvas(openPopupPos);
-
         node->start_update_loop();
         nodes.insert(node);
-        NodeEditor::SetNodePosition(node->id(), newNodePos);
       }
 
       ImGui::EndPopup();
@@ -235,10 +211,7 @@ int main(int, char**) {
       }
 
       if (node) {
-        ImVec2 newNodePos = NodeEditor::ScreenToCanvas(openPopupPos);
-
         nodes.insert(node);
-        NodeEditor::SetNodePosition(node->id(), newNodePos);
 
         if (contextPin->kind() == NodeEditor::PinKind::Input) {
           for (auto& pin : node->output_pins()) {
@@ -261,7 +234,30 @@ int main(int, char**) {
     }
     NodeEditor::Resume();
 
+    for (Node* node : nodes) {
+      if (node->is_first_render()) {
+        ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0);
+        node->render();
+        ImGui::PopStyleVar();
+
+        ImVec2 nodeSize = NodeEditor::GetNodeSize(node->id());
+        ImVec2 nodePos = NodeEditor::ScreenToCanvas(openPopupPos);
+        ImVec2 nodeNewPos = ImVec2(nodePos.x - nodeSize.x/2, nodePos.y - nodeSize.y/2);
+        NodeEditor::SetNodePosition(node->id(), nodeNewPos);
+      }
+
+      node->render();
+    }
+
+    for (Node* node : nodes) {
+      for (auto& link : node->outbound_links()) {
+        link->render();
+      }
+    }
+
     NodeEditor::End();
+
+    Link::play_animations();
 
     if (NodeEditor::PinId hoveredPinId = NodeEditor::GetHoveredPin()) {
       if (auto* pin = GenericPin::from(hoveredPinId)) {
