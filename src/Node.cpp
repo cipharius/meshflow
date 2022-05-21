@@ -82,6 +82,7 @@ void Node::render() {
   NodeEditor::PushStyleVar(NodeEditor::StyleVar_LinkStrength, 200);
   NodeEditor::PushStyleColor(NodeEditor::StyleColor_NodeBg, ImVec4(1.0f, 1.0f, 1.0f, alpha));
   NodeEditor::PushStyleColor(NodeEditor::StyleColor_NodeBorder, ImVec4(0.0f, 0.0f, 0.0f, alpha));
+  ImGui::PushItemWidth(200);
 
   NodeEditor::BeginNode(_id);
     ImGui::PushFont(io.Fonts->Fonts[1]);
@@ -92,17 +93,20 @@ void Node::render() {
 
     ImGui::Spacing();
 
+    // Left pins
     ImGui::BeginGroup();
     for (auto& pin : _inputPins)
       pin->render();
     ImGui::EndGroup();
 
-    ImGui::SameLine(0, 50);
+    ImGui::SameLine(ImGui::CalcItemWidth() / 2, 50);
 
+    // Right pins
     ImGui::BeginGroup();
     float maxSize = 0;
-    for (auto& pin : _outputPins)
+    for (auto& pin : _outputPins) {
       maxSize = std::max(maxSize, pin->calc_size().x);
+    }
 
     for (auto& pin : _outputPins) {
       int offset = maxSize - pin->calc_size().x;
@@ -145,6 +149,7 @@ void Node::render() {
     }
   }
 
+  ImGui::PopItemWidth();
   NodeEditor::PopStyleColor(2);
   NodeEditor::PopStyleVar(2);
   ImGui::PopStyleColor();

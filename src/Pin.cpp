@@ -59,12 +59,16 @@ void GenericPin::render(int offset) {
   switch (_kind) {
     case NodeEditor::PinKind::Input: {
       ImGui::Text(u8"⊛ %s", _name.c_str());
+      NodeEditor::PinPivotAlignment(ImVec2(0, 0.5));
       break;
     }
     case NodeEditor::PinKind::Output: {
       float cursorPosX = ImGui::GetCursorPosX();
       ImGui::SetCursorPosX(cursorPosX + offset);
       ImGui::Text(u8"%s ⊛", _name.c_str());
+
+      NodeEditor::PinPivotAlignment(ImVec2(1, 0.5));
+
       break;
     }
   }
