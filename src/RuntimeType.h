@@ -6,7 +6,7 @@
 #include <sstream>
 #include <memory>
 
-#include "Block.h"
+#include "GeometricTypes.h"
 
 namespace {
   // Escapes () around complex types
@@ -31,9 +31,11 @@ class RuntimeType {
     DECLARE_TYPE (String, std::string)
     DECLARE_TYPE (Int, int)
     DECLARE_TYPE (Float, float)
-    DECLARE_TYPE (Point, (std::array<float, 3>))
-    DECLARE_TYPE (PointVec, (std::vector<std::array<float, 3>>))
+    DECLARE_TYPE (Point, Vec3)
+    DECLARE_TYPE (PointVec, std::vector<Vec3>)
+    DECLARE_TYPE (Polyline, Polyline)
     DECLARE_TYPE (Block, Block)
+    DECLARE_TYPE (QuadMesh, QuadMesh)
 };
 
 template<typename T, const char* N>

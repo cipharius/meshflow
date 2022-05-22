@@ -79,7 +79,6 @@ void Node::render() {
 
   ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 0, 0, 255 * alpha));
   NodeEditor::PushStyleVar(NodeEditor::StyleVar_NodeRounding, 0);
-  NodeEditor::PushStyleVar(NodeEditor::StyleVar_LinkStrength, 200);
   NodeEditor::PushStyleColor(NodeEditor::StyleColor_NodeBg, ImVec4(1.0f, 1.0f, 1.0f, alpha));
   NodeEditor::PushStyleColor(NodeEditor::StyleColor_NodeBorder, ImVec4(0.0f, 0.0f, 0.0f, alpha));
   ImGui::PushItemWidth(200);
@@ -151,7 +150,7 @@ void Node::render() {
 
   ImGui::PopItemWidth();
   NodeEditor::PopStyleColor(2);
-  NodeEditor::PopStyleVar(2);
+  NodeEditor::PopStyleVar();
   ImGui::PopStyleColor();
 
   _firstRender = false;

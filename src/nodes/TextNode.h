@@ -18,7 +18,7 @@ class TextNode : public Node {
     void render_widget() override;
 
   private:
-    char _text[1024 * 16];
+    char _text[1024];
     char _label[32];
 };
 

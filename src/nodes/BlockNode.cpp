@@ -3,26 +3,28 @@
 REGISTER_NODE(BlockNode, "Block");
 
 BlockNode::BlockNode() {
-  this->addInputPin<RuntimeType::PointVec>("North");
-  this->addInputPin<RuntimeType::PointVec>("East");
-  this->addInputPin<RuntimeType::PointVec>("South");
-  this->addInputPin<RuntimeType::PointVec>("West");
+  this->addInputPin<RuntimeType::Polyline>("Top");
+  this->addInputPin<RuntimeType::Polyline>("Right");
+  this->addInputPin<RuntimeType::Polyline>("Bottom");
+  this->addInputPin<RuntimeType::Polyline>("Left");
+
   this->addOutputPin<RuntimeType::Block>("Block");
 }
 
 void BlockNode::update() {
   this->wait_for_input();
-  auto north = this->readPin<RuntimeType::PointVec>(0);
-  auto east = this->readPin<RuntimeType::PointVec>(1);
-  auto south = this->readPin<RuntimeType::PointVec>(2);
-  auto west = this->readPin<RuntimeType::PointVec>(3);
+  auto top = this->readPin<RuntimeType::Polyline>(0);
+  auto right = this->readPin<RuntimeType::Polyline>(1);
+  auto bottom = this->readPin<RuntimeType::Polyline>(2);
+  auto left = this->readPin<RuntimeType::Polyline>(3);
 
-  if (north && east && south && west) {
-    std::shared_ptr<Block> block(new Block());
-    block->north = *north;
-    block->east = *east;
-    block->south = *south;
-    block->west = *west;
+  if (top && right && bottom && left) {
+    std::shared_ptr<Block> block(new Block(
+      *top,
+      *right,
+      *bottom,
+      *left
+    ));
 
     writePin<RuntimeType::Block>(0, block);
   } else {

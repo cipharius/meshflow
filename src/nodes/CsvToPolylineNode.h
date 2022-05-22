@@ -1,5 +1,4 @@
-#ifndef CSVTOPOINTSNODE_H
-#define CSVTOPOINTSNODE_H
+#pragma once
 
 #include <vector>
 #include <array>
@@ -9,10 +8,8 @@
 #include "NodeRegistry.h"
 #include "RuntimeType.h"
 
-class CsvToPointsNode : public Node {
+class CsvToPolylineNode : public Node {
   public:
-    CsvToPointsNode();
+    CsvToPolylineNode();
     void update() override;
 };
-
-#endif
